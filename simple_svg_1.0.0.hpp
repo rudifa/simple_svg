@@ -974,7 +974,9 @@ public:
         std::stringstream ss;
         ss << elemStart("g");
         ss << fill.toString(layout) << stroke.toString(layout);
-        ss << attribute("transform", "translate(" + std::to_string(origin.x) + "," + std::to_string(-origin.y) + ")");
+        ss << attribute("transform", "translate(" +
+            std::to_string(translateX(origin.x, layout)) + "," +
+            std::to_string(translateY(origin.y, layout)) + ")");
         ss << ">\n";
 
         for (const auto &shape : shapes)

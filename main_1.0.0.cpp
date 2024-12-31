@@ -135,7 +135,7 @@ void demo2()
     }
 
     Group myGroup(Point(0, 0) , Fill(Color::Red), Stroke(2, Color(Color::Black)));
-    myGroup << Circle(Point(100, 100), 50, Fill(Color::Transparent))
+    myGroup << Circle(Point(0, 0), 50, Fill(Color::Transparent))
             << Rectangle(Point(100, 100), 100, 50, Fill(Color::Transparent));
 
     Text text(Point(100, 100), "Hello group!", Fill(Color::Black), Font(10, "Verdana"), Stroke(), 0);
@@ -158,7 +158,7 @@ void demo2()
 
 int main() // Example usage of the Simple SVG library.
 {
-    demo1();
+    // demo1();
     demo2();
 
     return 0;
