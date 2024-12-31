@@ -80,19 +80,6 @@ void demo1()
     rect.setRotation(60);
     doc << rect;
 
-    Group myGroup(Fill(Color::Red), Stroke(2, Color(Color::Black)));
-    myGroup << Circle(Point(100, 100), 50, Fill(Color::Blue))
-            << Rectangle(Point(200, 200), 100, 50, Fill(Color::Green));
-
-    Text text(Point(0, 0), "Hello world!", Fill(Color::Black), Font(10, "Verdana"), Stroke(), 90);
-
-    myGroup << text;
-
-    text.setRotation(-5); // Rotate the text 45 degrees
-    myGroup << text;      // Add the text to the group
-
-    doc << myGroup;
-
     doc.save();
 
     std::cout << "SVG saved to: " << filename << std::endl;
@@ -103,7 +90,7 @@ void demo1()
 void demo2()
 {
     const std::string filename = "my.svg";
-    Dimensions dimensions(200, 200);
+    Dimensions dimensions(400, 400);
 
     // Use TopLeft layout so that (0, 0) is the top left corner of the SVG
     // but specify coordinates in user space (origin at bottom left, +y axis upwards)
@@ -127,6 +114,19 @@ void demo2()
         text.setRotation(45);
         doc << text;
     }
+
+    Group myGroup(Fill(Color::Red), Stroke(2, Color(Color::Black)));
+    myGroup << Circle(Point(100, 100), 50, Fill(Color::Blue))
+            << Rectangle(Point(200, 200), 100, 50, Fill(Color::Green));
+
+    Text text(Point(0, 0), "Hello world!", Fill(Color::Black), Font(10, "Verdana"), Stroke(), 90);
+
+    myGroup << text;
+
+    text.setRotation(-5); // Rotate the text 45 degrees
+    myGroup << text;      // Add the text to the group
+
+    doc << myGroup;
 
     doc.save();
 
