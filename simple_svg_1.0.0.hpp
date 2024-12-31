@@ -511,13 +511,26 @@ namespace svg
         std::string toString(Layout const &layout) const override
         {
             std::stringstream ss;
-            ss << elemStart("rect") << attribute("x", translateX(edge.x, layout))
-               << attribute("y", translateY(edge.y, layout))
-               << attribute("width", translateScale(width, layout))
-               << attribute("height", translateScale(height, layout))
+            double x = translateX(edge.x, layout);
+            double y = translateY(edge.y, layout);
+            double w = translateScale(width, layout);
+            double h = translateScale(height, layout);
+
+            // Adjust y-coordinate for top-left origin
+            if (layout.origin == Layout::TopLeft || layout.origin == Layout::TopRight) {
+                // No change needed
+            } else {
+                y -= h;
+            }
+
+            ss << elemStart("rect") << attribute("x", x)
+               << attribute("y", y)
+               << attribute("width", w)
+               << attribute("height", h)
                << fill.toString(layout) << stroke.toString(layout) << emptyElemEnd();
             return ss.str();
         }
+
         void offset(Point const &offset) override
         {
             edge.x += offset.x;
