@@ -47,20 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <iostream>
 #include <numeric>
-// #include <optional>
-
-#if __has_include(<optional>)
 #include <optional>
-#elif __has_include(<experimental/optional>)
-#include <experimental/optional>
-namespace std
-{
-    template <typename T>
-    using optional = experimental::optional<T>;
-}
-#else
-#error "No <optional> header available"
-#endif
 
 namespace svg
 {
@@ -516,11 +503,18 @@ namespace svg
             double w = translateScale(width, layout);
             double h = translateScale(height, layout);
 
-            // Adjust y-coordinate for top-left origin
+            // Adjust y-coordinate for top vs. bottom origin
             if (layout.origin == Layout::TopLeft || layout.origin == Layout::TopRight) {
-                // No change needed
+                // No change needed for y
             } else {
                 y -= h;
+            }
+
+            // Adjust x-coordinate for left vs. right origin
+            if (layout.origin == Layout::TopLeft || layout.origin == Layout::BottomLeft) {
+                // No change needed for x
+            } else {
+                x -= w;
             }
 
             ss << elemStart("rect") << attribute("x", x)

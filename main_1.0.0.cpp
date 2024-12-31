@@ -106,13 +106,31 @@ void demo1()
     system(("open " + filename).c_str()); // Open the file in the default browser
 }
 
-void demo2()
+void demo2(Layout::Origin origin = Layout::BottomLeft)
 {
-    const std::string filename = "my.svg";
+    std::string originName;
+    switch (origin)
+    {
+    case Layout::TopLeft:
+        originName = "TopLeft";
+        break;
+    case Layout::TopRight:
+        originName = "TopRight";
+        break;
+    case Layout::BottomLeft:
+        originName = "BottomLeft";
+        break;
+    case Layout::BottomRight:
+        originName = "BottomRight";
+        break;
+    }
+
+    const std::string filename = "my_" + originName + ".svg";
+
     Dimensions dimensions(400, 400);
 
-    // Create a Document object with the default BottomLeft layout
-    Document doc(filename, Layout(dimensions));
+    // Create a Document object with the specified layout
+    Document doc(filename, Layout(dimensions, origin));
 
     // Blue document border
     {
@@ -121,9 +139,14 @@ void demo2()
                   << Point(dimensions.width, dimensions.height) << Point(0, dimensions.height);
         doc << docBorder;
     }
+
+    // Circle at the origin
+    {
+        doc << Circle(Point(0, 0), 50, Fill(Color::Green));
+    }
     // Circles in the corners
     {
-        doc << Circle(Point(25, 25), 50, Fill(Color::Blue));
+        doc << Circle(Point(25, 25), 50, Fill(Color::Transparent), Stroke(2.0, Color(Color::Red)));
         doc << Circle(Point(375, 375), 50, Fill(Color::Red));
     }
 
@@ -189,7 +212,11 @@ void demo2()
 int main() // Example usage of the Simple SVG library.
 {
     // demo1();
-    demo2();
+    demo2(Layout::BottomLeft);
+    demo2(Layout::TopLeft);
+    demo2(Layout::BottomRight);
+    demo2(Layout::TopRight);
+
 
     return 0;
 }
