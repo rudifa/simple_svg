@@ -4,10 +4,13 @@ project(simple-svg)
 # Enable testing
 enable_testing()
 
+# Set C++17 for all targets
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Add the main executable
 add_executable(simple_svg main_1.0.0.cpp simple_svg_1.0.0.hpp)
-
-set_property(TARGET simple_svg PROPERTY CXX_STANDARD 11)
 
 if(MSVC)
     add_definitions(/D_CRT_SECURE_NO_WARNINGS)
