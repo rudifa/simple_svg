@@ -86,6 +86,19 @@ void demo1()
     rect.setRotation(60);
     doc << rect;
 
+    Group myGroup(Point(200, 200), Fill(Color::Red), Stroke(2, Color(Color::Black)));
+    myGroup << Circle(Point(100, 100), 50, Fill(Color::Blue))
+            << Rectangle(Point(200, 200), 50, 50, Fill(Color::Green));
+
+    Text text(Point(0, 0), "Hello world!", Fill(Color::Black), Font(10, "Verdana"), Stroke(), 90);
+
+    myGroup << text;
+
+    text.setRotation(-5); // Rotate the text 45 degrees
+    myGroup << text;      // Add the text to the group
+
+    doc << myGroup;
+
     doc.save();
 
     std::cout << "SVG saved to: " << filename << std::endl;
@@ -121,16 +134,18 @@ void demo2()
         doc << text;
     }
 
-    Group myGroup(Fill(Color::Red), Stroke(2, Color(Color::Black)));
-    myGroup << Circle(Point(100, 100), 50, Fill(Color::Blue))
-            << Rectangle(Point(200, 200), 100, 50, Fill(Color::Green));
+    Group myGroup(Point(0, 0) , Fill(Color::Red), Stroke(2, Color(Color::Black)));
+    myGroup << Circle(Point(100, 100), 50, Fill(Color::Transparent))
+            << Rectangle(Point(100, 100), 100, 50, Fill(Color::Transparent));
 
-    Text text(Point(0, 0), "Hello world!", Fill(Color::Black), Font(10, "Verdana"), Stroke(), 90);
-
+    Text text(Point(100, 100), "Hello group!", Fill(Color::Black), Font(10, "Verdana"), Stroke(), 0);
     myGroup << text;
 
-    text.setRotation(-5); // Rotate the text 45 degrees
-    myGroup << text;      // Add the text to the group
+    text.setRotation(-45);
+    myGroup << text;
+
+    text.setRotation(-90);
+    myGroup << text;
 
     doc << myGroup;
 

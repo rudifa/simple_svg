@@ -185,7 +185,7 @@ TEST(SimpleSvgTest, StrokeTest)
 TEST(SimpleSvgTest, GroupTest)
 {
     Document doc;
-    Group group(Fill(Color::Red), Stroke(2, Color(Color::Black)));
+    Group group(Point(0, 0), Fill(Color::Red), Stroke(2, Color(Color::Black)));
     group << Circle(Point(100, 100), 50, Fill(Color::Blue));
     group << Rectangle(Point(200, 200), 100, 50, Fill(Color::Green));
     doc << group;
