@@ -891,27 +891,6 @@ namespace svg
         [[maybe_unused]] double scale;
         std::vector<Polyline> polylines;
 
-        // optional<Dimensions> getDimensions() const
-        // {
-        //     if (polylines.empty())
-        //         return optional<Dimensions>();
-
-        //     optional<Point> min = getMinPoint(polylines[0].points);
-        //     optional<Point> max = getMaxPoint(polylines[0].points);
-        //     for (unsigned i = 0; i < polylines.size(); ++i)
-        //     {
-        //         if (getMinPoint(polylines[i].points)->x < min->x)
-        //             min->x = getMinPoint(polylines[i].points)->x;
-        //         if (getMinPoint(polylines[i].points)->y < min->y)
-        //             min->y = getMinPoint(polylines[i].points)->y;
-        //         if (getMaxPoint(polylines[i].points)->x > max->x)
-        //             max->x = getMaxPoint(polylines[i].points)->x;
-        //         if (getMaxPoint(polylines[i].points)->y > max->y)
-        //             max->y = getMaxPoint(polylines[i].points)->y;
-        //     }
-
-        //     return optional<Dimensions>(Dimensions(max->x - min->x, max->y - min->y));
-        // }
         std::optional<Dimensions> getDimensions() const
         {
             if (polylines.empty())
