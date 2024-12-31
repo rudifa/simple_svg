@@ -39,44 +39,50 @@ using namespace svg;
 void demo1()
 {
     const std::string filename = "my_svg.svg";
-    Dimensions dimensions(500, 500);
+    Dimensions dimensions(600, 600);
     Document doc(filename, Layout(dimensions, Layout::BottomLeft));
 
+    // Blue document border
+    Polygon docBorder(Stroke(1, Color(Color::Blue)));
+    docBorder << Point(0, 0) << Point(dimensions.width, 0)
+              << Point(dimensions.width, dimensions.height) << Point(0, dimensions.height);
+    doc << docBorder;
+
     // Red image border.
-    Polygon border(Stroke(5, Color(Color::Red)));
-    border << Point(0, 0) << Point(dimensions.width, 0)
-           << Point(dimensions.width, dimensions.height) << Point(0, dimensions.height);
+    Polygon border(Stroke(1, Color(Color::Red)));
+    border << Point(0, 0) << Point(dimensions.width / 2, 0)
+           << Point(dimensions.width / 2, dimensions.height / 2) << Point(0, dimensions.height / 2);
     doc << border;
 
     // Long notation.  Local variable is created, children are added to varaible.
-    LineChart chart(Dimensions(), 25.0, Stroke(0.5, Color(Color::Purple)));
+    LineChart chart(Dimensions(), 12.5, Stroke(0.5, Color(Color::Purple)));
     Polyline polyline_a(Stroke(3.0, Color(Color::Blue)));
     Polyline polyline_b(Stroke(3.0, Color(Color::Aqua)));
     Polyline polyline_c(Stroke(3.0, Color(Color::Fuchsia)));
-    polyline_a << Point(0, 0) << Point(50, 150)
-               << Point(100, 200) << Point(150, 225) << Point(200, 220);
-    polyline_b << Point(0, 50) << Point(50, 110)
-               << Point(100, 150) << Point(150, 160) << Point(200, 150);
-    polyline_c << Point(0, 60) << Point(50, 75)
-               << Point(100, 70) << Point(150, 50) << Point(200, 10);
+    polyline_a << Point(0, 0) << Point(25, 75)
+               << Point(50, 100) << Point(75, 112.5) << Point(100, 110);
+    polyline_b << Point(0, 25) << Point(25, 55)
+               << Point(50, 75) << Point(75, 80) << Point(100, 75);
+    polyline_c << Point(0, 30) << Point(25, 37.5)
+               << Point(50, 35) << Point(75, 25) << Point(100, 5);
     chart << polyline_a << polyline_b << polyline_c;
     doc << chart;
 
     // Condensed notation, parenthesis isolate temporaries that are inserted into parents.
-    doc << (LineChart(Dimensions(325, 25))
-            << (Polyline(Stroke(2.5, Color(Color::Blue))) << Point(0, 0) << Point(50, 40) << Point(100, 65))
-            << (Polyline(Stroke(2.5, Color(Color::Orange))) << Point(0, 50) << Point(50, 80) << Point(100, 100))
-            << (Polyline(Stroke(2.5, Color(Color::Cyan))) << Point(0, 25) << Point(50, 65) << Point(100, 80)));
+    doc << (LineChart(Dimensions(162.5, 12.5))
+            << (Polyline(Stroke(2.5, Color(Color::Blue))) << Point(0, 0) << Point(25, 20) << Point(50, 32.5))
+            << (Polyline(Stroke(2.5, Color(Color::Orange))) << Point(0, 25) << Point(25, 40) << Point(50, 50))
+            << (Polyline(Stroke(2.5, Color(Color::Cyan))) << Point(0, 12.5) << Point(25, 32.5) << Point(50, 40)));
 
-    doc << Circle(Point(400, 400), 100, Fill(Color(100, 200, 120)), Stroke(5, Color(200, 250, 150)));
+    doc << Circle(Point(200, 200), 50, Fill(Color(100, 200, 120)), Stroke(5, Color(200, 250, 150)));
 
-    doc << Text(Point(25, 385), "Simple SVG", Fill(Color::Silver), Font(50, "Verdana"));
+    doc << Text(Point(12.5, 192.5), "Simple SVG", Fill(Color::Silver), Font(25, "Verdana"));
 
     doc << (Polygon(Fill(Color(200, 160, 220)), Stroke(2.5, Color(150, 160, 200)))
-            << Point(100, 350) << Point(125, 360) << Point(165, 350)
-            << Point(175, 300) << Point(125, 275) << Point(90, 315));
+            << Point(50, 175) << Point(62.5, 180) << Point(82.5, 175)
+            << Point(87.5, 150) << Point(62.5, 137.5) << Point(45, 157.5));
 
-    Rectangle rect(Point(350, 275), 100, 75, Fill(Color::Yellow));
+    Rectangle rect(Point(175, 137.5), 50, 37.5, Fill(Color::Yellow));
     rect.setRotation(60);
     doc << rect;
 
