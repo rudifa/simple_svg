@@ -414,7 +414,7 @@ namespace svg
     class Circle : public Shape
     {
     public:
-        Circle(Point const &center, double diameter, Fill const &fill,
+        Circle(Point const &center, double diameter, Fill const &fill = Fill(),
                Stroke const &stroke = Stroke())
             : Shape(fill, stroke), center(center), radius(diameter / 2) {}
 
