@@ -24,7 +24,7 @@ protected:
 
     void SetUp() override
     {
-        layout = Layout(Dimensions(100, 100), Layout::TopLeft);
+        layout = Layout(Dimensions(100, 100), Layout::BottomLeft); // the default Layout::Origin
     }
 };
 
@@ -70,8 +70,11 @@ TEST_F(SVGTest, PolygonTest)
 {
     Polygon polygon(Fill(Color::Green), Stroke(1, Color(Color::Black)));
     polygon << Point(0, 0) << Point(100, 0) << Point(100, 100) << Point(0, 100);
+
+    // std::cout << "* PolygonTest polygon: " << polygon.toString(layout) << std::endl;
+
     std::string polygonStr = polygon.toString(layout);
-    EXPECT_TRUE(polygonStr.find("points=\"0,0 100,0 100,100 0,100 \"") != std::string::npos);
+    EXPECT_TRUE(polygonStr.find("points=\"0,100 100,100 100,0 0,0 \"") != std::string::npos);
     EXPECT_TRUE(polygonStr.find("fill=\"rgb(0,128,0)\"") != std::string::npos);
     EXPECT_TRUE(polygonStr.find("stroke=\"rgb(0,0,0)\"") != std::string::npos);
 }
@@ -80,8 +83,11 @@ TEST_F(SVGTest, TextTest)
 {
     Text text(Point(10, 20), "Hello SVG", Fill(Color::Black), Font(12, "Arial"));
     std::string textStr = text.toString(layout);
+
+    // std::cout << "* TextTest textStr: " << textStr << std::endl;
+
     EXPECT_TRUE(textStr.find("x=\"10\"") != std::string::npos);
-    EXPECT_TRUE(textStr.find("y=\"20\"") != std::string::npos);
+    EXPECT_TRUE(textStr.find("y=\"80\"") != std::string::npos);
     EXPECT_TRUE(textStr.find("font-size=\"12\"") != std::string::npos);
     EXPECT_TRUE(textStr.find("font-family=\"Arial\"") != std::string::npos);
     EXPECT_TRUE(textStr.find(">Hello SVG<") != std::string::npos);
@@ -115,10 +121,13 @@ TEST_F(SVGTest, LineChartTest)
     chart << line2;
 
     std::string chartStr = chart.toString(layout);
+
+    // std::cout << "* LineChartTest SVG:\n" << chartStr << std::endl;
+
     EXPECT_TRUE(chartStr.find("stroke=\"rgb(0,0,255)\"") != std::string::npos);
     EXPECT_TRUE(chartStr.find("stroke=\"rgb(255,0,0)\"") != std::string::npos);
-    EXPECT_TRUE(chartStr.find("points=\"0,0 10,10 20,20 \"") != std::string::npos);
-    EXPECT_TRUE(chartStr.find("points=\"0,20 10,10 20,0 \"") != std::string::npos);
+    EXPECT_TRUE(chartStr.find("points=\"0,100 10,90 20,80 \"") != std::string::npos);
+    EXPECT_TRUE(chartStr.find("points=\"0,80 10,90 20,100 \"") != std::string::npos);
 }
 
 TEST_F(SVGTest, DocumentTest)
@@ -172,10 +181,9 @@ TEST(SimpleSvgTest, StrokeTest)
     doc << Rectangle(Point(0, 0), 100, 100, Fill(), stroke);
     std::string docStr = doc.toString();
 
-    // std::cout << "StrokeTest SVG:\n"
-    //           << docStr << std::endl;
+    // std::cout << "* StrokeTest SVG:\n" << docStr << std::endl;
 
-    EXPECT_TRUE(docStr.find("rect x=\"0\" y=\"300\" width=\"100\" height=\"100\"") != std::string::npos);
+    EXPECT_TRUE(docStr.find("rect x=\"0\" y=\"200\" width=\"100\" height=\"100\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("height=\"100\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("fill=\"none\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("stroke-width=\"3\"") != std::string::npos);
@@ -191,12 +199,11 @@ TEST(SimpleSvgTest, GroupTest)
     doc << group;
     std::string docStr = doc.toString();
 
-    // std::cout << "GroupTest SVG:\n"
-    //           << docStr << std::endl;
+    std::cout << "* GroupTest SVG:\n" << docStr << std::endl;
 
     EXPECT_TRUE(docStr.find("<g fill=\"rgb(255,0,0)\" stroke-width=\"2\" stroke=\"rgb(0,0,0)\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("<circle cx=\"100\" cy=\"200\" r=\"25\" fill=\"rgb(0,0,255)\"") != std::string::npos);
-    EXPECT_TRUE(docStr.find("<rect x=\"200\" y=\"100\" width=\"100\" height=\"50\" fill=\"rgb(0,128,0)\"") != std::string::npos);
+    EXPECT_TRUE(docStr.find("<rect x=\"200\" y=\"50\" width=\"100\" height=\"50\" fill=\"rgb(0,128,0)\"") != std::string::npos);
 }
 
 TEST(SimpleSvgTest, TextTest)
