@@ -28,3 +28,6 @@ build/
 *.exe
 *.out
 *.app
+
+# MAc
+.DS_Store
