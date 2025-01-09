@@ -34,6 +34,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <fstream>
 #include <iostream>
+#include <numeric>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -59,30 +61,6 @@ inline std::string elemEnd(std::string const &element_name)
 }
 inline std::string emptyElemEnd() { return "/>\n"; }
 
-// Quick optional return type.  This allows functions to return an invalid
-//  value if no good return is possible.  The user checks for validity
-//  before using the returned value.
-template <typename T>
-class optional
-{
-   public:
-    explicit optional<T>(T const &type) : valid(true), type(type) {}
-    optional<T>() : valid(false), type(T()) {}
-    T *operator->()
-    {
-        // If we try to access an invalid value, an exception is thrown.
-        if (!valid) throw std::exception();
-
-        return &type;
-    }
-    // Test for validity.
-    bool operator!() const { return !valid; }
-
-   private:
-    bool valid;
-    T type;
-};
-
 struct Dimensions
 {
     Dimensions(double width, double height) : width(width), height(height) {}
@@ -99,19 +77,52 @@ struct Point
     double x;
     double y;
 
-    Point operator+(const Point &other) const
+    Point operator+(const Point &rhs) const
     {
-        return Point(x + other.x, y + other.y);
+        return Point(x + rhs.x, y + rhs.y);
     }
 
-    Point operator-(const Point &other) const
+    Point operator-(const Point &rhs) const
     {
-        return Point(x - other.x, y - other.y);
+        return Point(x - rhs.x, y - rhs.y);
     }
-};
-inline optional<Point> getMinPoint(std::vector<Point> const &points)
+    return optional<Point>(min);
+} inline optional<Point> getMaxPoint(std::vector<Point> const &points)
 {
     if (points.empty()) return optional<Point>();
+
+    Point &operator+=(const Point &rhs)
+    {
+        x += rhs.x;
+        y += rhs.y;
+        return *this;
+    }
+
+    Point &operator-=(const Point &rhs)
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        return *this;
+    }
+
+    Point &operator*=(double scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        return *this;
+    }
+
+    Point &operator/=(double scalar)
+    {
+        x /= scalar;
+        y /= scalar;
+        return *this;
+    }
+};
+
+inline std::optional<Point> getMinPoint(std::vector<Point> const &points)
+{
+    if (points.empty()) return std::optional<Point>();
 
     Point min = points[0];
     for (unsigned i = 0; i < points.size(); ++i)
@@ -119,11 +130,11 @@ inline optional<Point> getMinPoint(std::vector<Point> const &points)
         if (points[i].x < min.x) min.x = points[i].x;
         if (points[i].y < min.y) min.y = points[i].y;
     }
-    return optional<Point>(min);
+    return std::optional<Point>(min);
 }
-inline optional<Point> getMaxPoint(std::vector<Point> const &points)
+inline std::optional<Point> getMaxPoint(std::vector<Point> const &points)
 {
-    if (points.empty()) return optional<Point>();
+    if (points.empty()) return std::optional<Point>();
 
     Point max = points[0];
     for (unsigned i = 0; i < points.size(); ++i)
@@ -131,12 +142,15 @@ inline optional<Point> getMaxPoint(std::vector<Point> const &points)
         if (points[i].x > max.x) max.x = points[i].x;
         if (points[i].y > max.y) max.y = points[i].y;
     }
-    return optional<Point>(max);
+    return std::optional<Point>(max);
 }
 
 struct Size
 {
-    Size(double width = 0, double height = 0) : width(width), height(height) {}
+    explicit Size(double width = 0, double height = 0)
+        : width(width), height(height)
+    {
+    }
     double width;
     double height;
 };
@@ -235,6 +249,11 @@ class Color : public Serializeable
         Yellow
     };
 
+    Color()
+        : transparent(false),
+          red(0),
+          green(0),
+          blue(0) {}  // Default constructor
     Color(int r, int g, int b) : transparent(false), red(r), green(g), blue(b)
     {
     }
@@ -340,9 +359,9 @@ class Stroke : public Serializeable
 {
    public:
     explicit Stroke(double width = -1,
-                    Color::Defaults colorDefault = Color::Transparent,
+                    Color::Defaults color = Color::Transparent,
                     bool nonScalingStroke = false)
-        : width(width), color(Color(colorDefault)), nonScaling(nonScalingStroke)
+        : width(width), color(Color(color)), nonScaling(nonScalingStroke)
     {
     }
 
@@ -353,13 +372,8 @@ class Stroke : public Serializeable
 
     std::string toString(Layout const &layout) const override
     {
-        // If stroke width is invalid.
         if (width < 0) return std::string();
 
-        std::stringstream ss;
-        ss << attribute("stroke-width", translateScale(width, layout))
-           << attribute("stroke", color.toString(layout));
-        if (nonScaling) ss << attribute("vector-effect", "non-scaling-stroke");
         return ss.str();
     }
 
@@ -394,20 +408,45 @@ class Font : public Serializeable
 class Shape : public Serializeable
 {
    public:
-    Shape() : fill(Fill()), stroke(Stroke()) {}
-    Shape(const Fill &fill) : fill(fill), stroke(Stroke()) {}
-    Shape(const Stroke &stroke) : fill(Fill()), stroke(stroke) {}
-    Shape(const Fill &fill, const Stroke &stroke) : fill(fill), stroke(stroke)
+    Shape() : fill(Fill()), stroke(Stroke()), rotation(0) {}
+
+    Shape(Fill const &fill) : fill(fill), stroke(Stroke()), rotation(0) {}
+
+    Shape(Fill const &fill, Stroke const &stroke)
+        : fill(fill), stroke(stroke), rotation(0)
+    {
+    }
+
+    Shape(Fill const &fill, Stroke const &stroke, double rotation)
+        : fill(fill), stroke(stroke), rotation(rotation)
     {
     }
 
     virtual ~Shape() override {}
+
     virtual std::string toString(Layout const &layout) const override = 0;
     virtual void offset(Point const &offset) = 0;
+    virtual std::unique_ptr<Shape> clone() const = 0;
+
+    void setRotation(double degrees) { rotation = degrees; }
+    double getRotation() const { return rotation; }
+
+    virtual Point getRotationCenter() const = 0;
 
    protected:
     Fill fill;
     Stroke stroke;
+    double rotation;
+
+    std::string getRotationString() const
+    {
+        if (rotation == 0) return "";
+        Point center = getRotationCenter();
+        std::stringstream ss;
+        ss << " transform=\"rotate(" << rotation << " " << center.x << " "
+           << center.y << ")\"";
+        return ss.str();
+    }
 };
 
 class ShapeColl : public Shape
@@ -445,6 +484,16 @@ class ShapeColl : public Shape
         }
     }
 
+    Point getRotationCenter() const override
+    {
+        return Point();
+    }  // TODO FIX THIS
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<ShapeColl>(*this);  // TODO VERIFY AND TEST
+    }
+
    private:
     std::vector<std::shared_ptr<Serializeable>> elements;
 };
@@ -468,9 +517,8 @@ class Circle : public Shape
         : Shape(fill, stroke), center(center), radius(diameter / 2)
     {
     }
-    std::string toString(Layout const &layout) const override
+
     {
-        std::stringstream ss;
         ss << elemStart("circle")
            << attribute("cx", translateX(center.x, layout))
            << attribute("cy", translateY(center.y, layout))
@@ -483,6 +531,13 @@ class Circle : public Shape
     {
         center.x += offset.x;
         center.y += offset.y;
+    }
+
+    Point getRotationCenter() const override { return center; }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Circle>(*this);
     }
 
    private:
@@ -501,6 +556,7 @@ class Elipse : public Shape
           radius_height(height / 2)
     {
     }
+
     std::string toString(Layout const &layout) const override
     {
         std::stringstream ss;
@@ -517,6 +573,13 @@ class Elipse : public Shape
     {
         center.x += offset.x;
         center.y += offset.y;
+    }
+
+    Point getRotationCenter() const override { return center; }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Elipse>(*this);
     }
 
    private:
@@ -569,10 +632,21 @@ class Rectangle : public Shape
            << emptyElemEnd();
         return ss.str();
     }
+
     void offset(Point const &offset) override
     {
         edge.x += offset.x;
         edge.y += offset.y;
+    }
+
+    Point getRotationCenter() const override
+    {
+        return Point(edge.x + width / 2, edge.y + height / 2);
+    }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Rectangle>(*this);
     }
 
    private:
@@ -609,6 +683,17 @@ class Line : public Shape
         end_point.y += offset.y;
     }
 
+    Point getRotationCenter() const override
+    {
+        return Point((start_point.x + end_point.x) / 2,
+                     (start_point.y + end_point.y) / 2);
+    }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Line>(*this);
+    }
+
    private:
     Point start_point;
     Point end_point;
@@ -626,6 +711,7 @@ class Polygon : public Shape
         : Shape(Fill(Color::Transparent), stroke)
     {
     }
+
     Polygon &operator<<(Point const &point)
     {
         points.push_back(point);
@@ -653,6 +739,23 @@ class Polygon : public Shape
             points[i].x += offset.x;
             points[i].y += offset.y;
         }
+    }
+
+    Point getRotationCenter() const override
+    {
+        if (points.empty()) return Point();
+        double sumX = 0, sumY = 0;
+        for (const auto &point : points)
+        {
+            sumX += point.x;
+            sumY += point.y;
+        }
+        return Point(sumX / points.size(), sumY / points.size());
+    }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Polygon>(*this);
     }
 
    private:
@@ -718,6 +821,24 @@ class Path : public Shape
             }
     }
 
+    Point getRotationCenter() const override
+    {
+        if (paths.empty()) return Point();
+        double sumX = 0, sumY = 0;
+        for (auto const &subpath : paths)
+            for (auto const &point : subpath)
+            {
+                sumX += point.x;
+                sumY += point.y;
+            }
+        return Point(sumX / paths.size(), sumY / paths.size());
+    }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Path>(*this);
+    }
+
    private:
     std::vector<std::vector<Point>> paths;
 };
@@ -771,18 +892,40 @@ class Polyline : public Shape
             points[i].y += offset.y;
         }
     }
+
+    Point getRotationCenter() const override
+    {
+        if (points.empty()) return Point();
+        double sumX = 0, sumY = 0;
+        for (const auto &point : points)
+        {
+            sumX += point.x;
+            sumY += point.y;
+        }
+        return Point(sumX / points.size(), sumY / points.size());
+    }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Polyline>(*this);
+    }
     std::vector<Point> points;
 };
 
 class Text : public Shape
 {
    public:
+    // TODO: CONSIDER PUTTING FONT BEFORE FILL
     Text(Point const &origin, std::string const &content,
          Fill const &fill = Fill(), Font const &font = Font(),
-         Stroke const &stroke = Stroke())
-        : Shape(fill, stroke), origin(origin), content(content), font(font)
+         Stroke const &stroke = Stroke(), double rotation = 0)
+        : Shape(fill, stroke, rotation),
+          origin(origin),
+          content(content),
+          font(font)
     {
     }
+
     std::string toString(Layout const &layout) const override
     {
         std::stringstream ss;
@@ -813,6 +956,7 @@ class Text : public Shape
            << font.toString(layout) << ">" << content << elemEnd("text");
         return ss.str();
     }
+
     void offset(Point const &offset) override
     {
         origin.x += offset.x;
@@ -825,6 +969,29 @@ class Text : public Shape
         double width = measureTextWidth(content, font);
         double height = measureTextHeight(font);
         return Box(origin, Size(width, height));
+    }
+
+    Point getRotationCenter() const override { return origin; }
+
+    Point getRotationCenterText() const  // a possible future option
+    {
+        // Estimate the bounding box based on font metrics
+        double textWidth =
+            content.length() * font.getSize() * 0.6;  // Rough estimate
+        double textHeight = font.getSize();
+
+        // Calculate the center based on the estimated bounding box
+        double centerX = origin.x + textWidth / 2;
+        double centerY =
+            origin.y - textHeight / 2;  // Subtract half height because SVG text
+                                        // origin is at the baseline
+
+        return Point(centerX, centerY);
+    }
+
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<Text>(*this);
     }
 
    private:
@@ -850,7 +1017,9 @@ class LineChart : public Shape
 {
    public:
     explicit LineChart(Dimensions margin = Dimensions(), double scale = 1,
-                       Stroke const &axis_stroke = Stroke(.5, Color::Purple))
+
+                       Stroke const &axis_stroke = Stroke(0.5,
+                                                          Color(Color::Purple)))
         : axis_stroke(axis_stroke), margin(margin), scale(scale)
     {
     }
@@ -877,36 +1046,55 @@ class LineChart : public Shape
             polylines[i].offset(offset);
     }
 
+    Point getRotationCenter() const override
+    {
+        if (polylines.empty()) return Point();
+        Point min = polylines[0].getRotationCenter();
+        Point max = min;
+        for (const auto &polyline : polylines)
+        {
+            Point center = polyline.getRotationCenter();
+            if (center.x < min.x) min.x = center.x;
+            if (center.y < min.y) min.y = center.y;
+            if (center.x > max.x) max.x = center.x;
+            if (center.y > max.y) max.y = center.y;
+        }
+        return Point((min.x + max.x) / 2, (min.y + max.y) / 2);
+    }
+    virtual std::unique_ptr<Shape> clone() const override
+    {
+        return std::make_unique<LineChart>(*this);
+    }
+
    private:
     Stroke axis_stroke;
     Dimensions margin;
-    double scale;
+    [[maybe_unused]] double scale;
     std::vector<Polyline> polylines;
 
-    optional<Dimensions> getDimensions() const
+    std::optional<Dimensions> getDimensions() const
     {
-        if (polylines.empty()) return optional<Dimensions>();
+        if (polylines.empty()) return std::nullopt;
 
-        optional<Point> min = getMinPoint(polylines[0].points);
-        optional<Point> max = getMaxPoint(polylines[0].points);
-        for (unsigned i = 0; i < polylines.size(); ++i)
+        Point min = polylines[0].points[0];
+        Point max = min;
+        for (const auto &polyline : polylines)
         {
-            if (getMinPoint(polylines[i].points)->x < min->x)
-                min->x = getMinPoint(polylines[i].points)->x;
-            if (getMinPoint(polylines[i].points)->y < min->y)
-                min->y = getMinPoint(polylines[i].points)->y;
-            if (getMaxPoint(polylines[i].points)->x > max->x)
-                max->x = getMaxPoint(polylines[i].points)->x;
-            if (getMaxPoint(polylines[i].points)->y > max->y)
-                max->y = getMaxPoint(polylines[i].points)->y;
+            for (const auto &point : polyline.points)
+            {
+                min.x = std::min(min.x, point.x);
+                min.y = std::min(min.y, point.y);
+                max.x = std::max(max.x, point.x);
+                max.y = std::max(max.y, point.y);
+            }
         }
 
-        return optional<Dimensions>(
-            Dimensions(max->x - min->x, max->y - min->y));
+        return Dimensions(max.x - min.x, max.y - min.y);
     }
     std::string axisString(Layout const &layout) const
     {
-        optional<Dimensions> dimensions = getDimensions();
+        std::optional<Dimensions> dimensions = getDimensions();
+
         if (!dimensions) return "";
 
         // Make the axis 10% wider and higher than the data points.
@@ -929,13 +1117,114 @@ class LineChart : public Shape
 
         std::vector<Circle> vertices;
         for (unsigned i = 0; i < shifted_polyline.points.size(); ++i)
-            vertices.push_back(Circle(
-                shifted_polyline.points[i], getDimensions()->height / 30.0,
-                Fill(Color::Black)));  // Use Fill instead of direct Color
+
+            vertices.push_back(Circle(shifted_polyline.points[i],
+                                      getDimensions()->height / 30.0,
+                                      Fill(Color::Black)));
 
         return shifted_polyline.toString(layout) +
                vectorToString(vertices, layout);
     }
+};
+
+class Group : public Shape
+{
+   public:
+    explicit Group(Point const &origin = Point(), Fill const &fill = Fill(),
+                   Stroke const &stroke = Stroke())
+        : Shape(fill, stroke), origin(origin)
+    {
+    }
+
+    Group(const Group &) = delete;
+    Group &operator=(const Group &) = delete;
+
+    Group(Group &&other) noexcept
+        : Shape(std::move(other)),
+          shapes(std::move(other.shapes)),
+          origin(std::move(other.origin))
+    {
+    }
+
+    Group &operator=(Group &&other) noexcept
+    {
+        if (this != &other)
+        {
+            Shape::operator=(std::move(other));
+            shapes = std::move(other.shapes);
+            origin = std::move(other.origin);
+        }
+        return *this;
+    }
+
+    Group &operator<<(Shape const &shape)
+    {
+        shapes.push_back(shape.clone());
+        return *this;
+    }
+
+    std::string toString(Layout const &layout) const override
+    {
+        std::stringstream ss;
+        ss << elemStart("g");
+        ss << fill.toString(layout) << stroke.toString(layout);
+        // ss << attribute("transform",
+        //                 "translate(" +
+        //                     std::to_string(translateX(origin.x, layout)) +
+        //                     "," + std::to_string(translateY(origin.y,
+        //                     layout)) + ")");
+        ss << ">\n";
+
+        for (const auto &shape : shapes)
+        {
+            ss << shape->toString(layout);
+        }
+
+        ss << elemEnd("g");
+        return ss.str();
+    }
+
+    void offset(Point const &offset) override
+    {
+        origin.x += offset.x;
+        origin.y += offset.y;
+    }
+
+    Point getRotationCenter() const override
+    {
+        if (shapes.empty())
+        {
+            return origin;
+        }
+
+        double total_x = 0.0;
+        double total_y = 0.0;
+        int count = 0;
+
+        for (const auto &shape : shapes)
+        {
+            Point center = shape->getRotationCenter();
+            total_x += center.x;
+            total_y += center.y;
+            ++count;
+        }
+
+        return Point(origin.x + total_x / count, origin.y + total_y / count);
+    }
+
+    std::unique_ptr<Shape> clone() const override
+    {
+        auto new_group = std::make_unique<Group>(origin, fill, stroke);
+        for (const auto &shape : shapes)
+        {
+            new_group->shapes.push_back(shape->clone());
+        }
+        return new_group;
+    }
+
+   private:
+    std::vector<std::unique_ptr<Shape>> shapes;
+    Point origin;
 };
 
 class Document
@@ -959,6 +1248,7 @@ class Document
         writeToStream(ss);
         return ss.str();
     }
+
     bool save() const
     {
         std::ofstream ofs(file_name.c_str());
@@ -994,4 +1284,5 @@ class Document
     std::vector<std::string> body_nodes_str_list;
 };
 }  // namespace svg
+
 #endif

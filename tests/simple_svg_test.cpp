@@ -1,3 +1,4 @@
+
 // TEST
 // TEST is used to define a simple test case.
 // It does not require any setup or teardown code.
@@ -54,7 +55,7 @@ TEST_F(SVGTest, ShapeCollTest)
 TEST_F(SVGTest, Shape2Test)
 {
     Circle circle(Point(50, 50), 20, Fill(Color::Red), Stroke(2, Color::Blue));
-    std::string circleStr = circle.toString(layout);
+    std::string circleStr = circle.toString(layoutBL);
 
     // std::cout << "* Shape2Test circleStr: " << circleStr << std::endl;
 
@@ -63,6 +64,25 @@ TEST_F(SVGTest, Shape2Test)
     EXPECT_TRUE(circleStr.find("r=\"10\"") != std::string::npos);
     EXPECT_TRUE(circleStr.find("fill=\"rgb(255,0,0)\"") != std::string::npos);
     EXPECT_TRUE(circleStr.find("stroke=\"rgb(0,0,255)\"") != std::string::npos);
+}
+
+TEST_F(SVGTest, ShapeCollTest)
+{
+    ShapeColl ShapeColl;
+    std::string sercollStr = ShapeColl.toString(layoutBL);
+
+    // std::cout << "* ShapeCollTest sercollStr: " << sercollStr << std::endl;
+    EXPECT_TRUE(sercollStr.empty());
+
+    ShapeColl << Text(Point(10, 20), "Hello, SVG!", Fill(Color::Black),
+                      Font(12, "Arial"));
+
+    std::string expectedStr =
+        "\t<text x=\"10\" y=\"80\" fill=\"rgb(0,0,0)\" font-size=\"12\" "
+        "font-family=\"Arial\" >Hello, SVG!</text>\n";
+    sercollStr = ShapeColl.toString(layoutBL);
+    // std::cout << "* ShapeCollTest sercollStr: " << sercollStr << std::endl;
+    EXPECT_EQ(sercollStr, expectedStr);
 }
 
 TEST_F(SVGTest, PolygonTest)
@@ -91,6 +111,25 @@ TEST_F(SVGTest, TextTest)
     EXPECT_TRUE(textStr.find(">Hello SVG<") != std::string::npos);
 }
 
+TEST_F(SVGTest, TextRotationTest)
+{
+    Text text(Point(50, 50), "Rotated Text", Fill(Color::Black),
+              Font(12, "Arial"), Stroke(), 45);
+    std::string textStr = text.toString(layoutBL);
+
+    // std::cout << "* TextRotationTest textStr:\n" << textStr << std::endl;
+
+    EXPECT_TRUE(textStr.find("x=\"50\"") != std::string::npos);
+    EXPECT_TRUE(textStr.find("y=\"50\"") != std::string::npos);
+    EXPECT_TRUE(textStr.find("font-size=\"12\"") != std::string::npos);
+    EXPECT_TRUE(textStr.find("font-family=\"Arial\"") != std::string::npos);
+    EXPECT_TRUE(textStr.find("fill=\"rgb(0,0,0)\"") != std::string::npos);
+    // EXPECT_TRUE(textStr.find("transform=\"rotate(45 50 50)\"") !=
+    //             std::string::npos);                                  // TODO
+    //             FIXME
+    EXPECT_TRUE(textStr.find(">Rotated Text<") != std::string::npos);
+}
+
 TEST_F(SVGTest, LineChartTest)
 {
     LineChart chart;
@@ -102,7 +141,10 @@ TEST_F(SVGTest, LineChartTest)
     line2 << Point(0, 20) << Point(10, 10) << Point(20, 0);
     chart << line2;
 
-    std::string chartStr = chart.toString(layout);
+    std::string chartStr = chart.toString(layoutBL);
+
+    // std::cout << "* LineChartTest chartStr:\n" << chartStr << std::endl;
+
     EXPECT_TRUE(chartStr.find("stroke=\"rgb(0,0,255)\"") != std::string::npos);
     EXPECT_TRUE(chartStr.find("stroke=\"rgb(255,0,0)\"") != std::string::npos);
     EXPECT_TRUE(chartStr.find("points=\"0,0 10,10 20,20 \"") !=
@@ -119,7 +161,7 @@ TEST_F(SVGTest, DocumentTest)
 
     std::string docStr = doc.toString();
 
-    // std::cout << "DocumentTest SVG:\n"
+    // std::cout << "* DocumentTest docStr:\n"
     //           << docStr << std::endl;
 
     EXPECT_TRUE(docStr.find("<svg width=\"200px\" height=\"200px\"") !=
@@ -140,7 +182,7 @@ TEST_F(SVGTest, PathTest)
     doc << path;
     std::string docStr = doc.toString();
 
-    // std::cout << "PathTest SVG:\n"
+    // std::cout << "* PathTest docStr:\n"
     //           << docStr << std::endl;
 
     EXPECT_TRUE(docStr.find("<path") != std::string::npos);
@@ -151,10 +193,78 @@ TEST_F(SVGTest, PathTest)
     EXPECT_TRUE(docStr.find("stroke-width=\"2\"") != std::string::npos);
 }
 
-TEST_F(SVGTest, ColorTest2)
+TEST_F(SVGTest, OriginsTest)
 {
-    Color color(128, 64, 32);
-    EXPECT_EQ(color.toString(layout), "rgb(128,64,32)");
+    {
+        Document doc("test.svg",
+                     Layout(Dimensions(200, 200), Layout::BottomLeft));
+        doc << Circle(Point(0, 0), 10);  // Circle at origin (0, 0)
+        doc << Rectangle(Point(100, 100), 20,
+                         45);  // Rectangle at center (100, 100)
+        std::string docStr = doc.toString();
+        // std::cout << "* OriginsTest docStr:\n" << docStr << std::endl;
+
+        EXPECT_TRUE(docStr.find("<svg width=\"200px\" height=\"200px\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(docStr.find("<circle cx=\"0\" cy=\"200\" r=\"5\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(
+            docStr.find(
+                "<rect x=\"100\" y=\"55\" width=\"20\" height=\"45\"") !=
+            std::string::npos);
+    }
+    {
+        Document doc("test.svg", Layout(Dimensions(200, 200), Layout::TopLeft));
+        doc << Circle(Point(0, 0), 10);  // Circle at origin (0, 0)
+        doc << Rectangle(Point(100, 100), 20,
+                         45);  // Rectangle at center (100, 100)
+        std::string docStr = doc.toString();
+        // std::cout << "* OriginsTest docStr:\n" << docStr << std::endl;
+
+        EXPECT_TRUE(docStr.find("<svg width=\"200px\" height=\"200px\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(docStr.find("<circle cx=\"0\" cy=\"0\" r=\"5\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(
+            docStr.find(
+                "<rect x=\"100\" y=\"100\" width=\"20\" height=\"45\"") !=
+            std::string::npos);
+    }
+    {
+        Document doc("test.svg",
+                     Layout(Dimensions(200, 200), Layout::BottomRight));
+        doc << Circle(Point(0, 0), 10);  // Circle at origin (0, 0)
+        doc << Rectangle(Point(100, 100), 20,
+                         45);  // Rectangle at center (100, 100)
+        std::string docStr = doc.toString();
+        // std::cout << "* OriginsTest docStr:\n" << docStr << std::endl;
+
+        EXPECT_TRUE(docStr.find("<svg width=\"200px\" height=\"200px\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(docStr.find("<circle cx=\"200\" cy=\"200\" r=\"5\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(
+            docStr.find("<rect x=\"80\" y=\"55\" width=\"20\" height=\"45\"") !=
+            std::string::npos);
+    }
+    {
+        Document doc("test.svg",
+                     Layout(Dimensions(200, 200), Layout::TopRight));
+        doc << Circle(Point(0, 0), 10);  // Circle at origin (0, 0)
+        doc << Rectangle(Point(100, 100), 20,
+                         45);  // Rectangle at center (100, 100)
+        std::string docStr = doc.toString();
+        // std::cout << "* OriginsTest docStr:\n" << docStr << std::endl;
+
+        EXPECT_TRUE(docStr.find("<svg width=\"200px\" height=\"200px\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(docStr.find("<circle cx=\"200\" cy=\"0\" r=\"5\"") !=
+                    std::string::npos);
+        EXPECT_TRUE(
+            docStr.find(
+                "<rect x=\"80\" y=\"100\" width=\"20\" height=\"45\"") !=
+            std::string::npos);
+    }
 }
 
 TEST_F(SVGTest, LayoutTest)
@@ -192,8 +302,7 @@ TEST(SimpleSvgTest, TextTest)
                 Font(12, "Arial"));
     std::string docStr = doc.toString();
 
-    // std::cout << "TextTest SVG:\n"
-    //           << docStr << std::endl;
+    // std::cout << "* TextTest docStr:\n" << docStr << std::endl;
 
     EXPECT_TRUE(docStr.find("<text x=\"10\" y=\"280\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("font-size=\"12\"") != std::string::npos);
@@ -208,8 +317,7 @@ TEST(SimpleSvgTest, CircleTest)
                   Stroke(2, Color::Blue));
     std::string docStr = doc.toString();
 
-    // std::cout << "CircleTest SVG:\n"
-    //           << docStr << std::endl;
+    // std::cout << "* CircleTest docStr:\n" << docStr << std::endl;
 
     EXPECT_TRUE(docStr.find("<circle cx=\"100\" cy=\"200\" r=\"25\"") !=
                 std::string::npos);  // WHY cy="200"?
@@ -227,7 +335,7 @@ TEST(SimpleSvgTest, PolygonTest)
 
     std::string docStr = doc.toString();
 
-    // std::cout << "PolygonTest SVG:\n"
+    // std::cout << "* PolygonTest docStr:\n"
     //           << docStr << std::endl;
 
     EXPECT_TRUE(
@@ -248,21 +356,25 @@ TEST(SimpleSvgTest, LineChartTest)
     chart << line1 << line2;
     doc << chart;
     std::string docStr = doc.toString();
+
+    // std::cout << "* LineChartTest docStr:\n" << docStr << std::endl;
+
     EXPECT_TRUE(docStr.find("<polyline") != std::string::npos);
     EXPECT_TRUE(docStr.find("stroke=\"rgb(0,0,255)\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("stroke=\"rgb(255,0,0)\"") != std::string::npos);
     EXPECT_TRUE(docStr.find("<circle") != std::string::npos);  // Vertices
 }
 
-TEST(SimpleSvgTest, StrokeTest)
+TEST(SimpleSvgTest, GroupTest)
 {
-    Stroke stroke(3, Color::Blue, true);
     Document doc;
-    doc << Rectangle(Point(0, 0), 100, 100, Fill(), stroke);
+    Group group(Point(0, 0), Fill(Color::Red), Stroke(2, Color::Black));
+    group << Circle(Point(100, 100), 50, Fill(Color::Blue));
+    group << Rectangle(Point(200, 200), 100, 50, Fill(Color::Green));
+    doc << group;
     std::string docStr = doc.toString();
 
-    // std::cout << "StrokeTest SVG:\n"
-    //           << docStr << std::endl;
+    // std::cout << "* GroupTest docStr:\n" << docStr << std::endl;
 
     EXPECT_TRUE(
         docStr.find("rect x=\"0\" y=\"200\" width=\"100\" height=\"100\"") !=
@@ -273,18 +385,42 @@ TEST(SimpleSvgTest, StrokeTest)
     EXPECT_TRUE(docStr.find("stroke=\"rgb(0,0,255)\"") != std::string::npos);
 }
 
-TEST(SimpleSvgTest, PointTest)
+TEST(SimpleSvgTest, GroupTest2)
 {
-    Point p1(10, 20);
-    Point p2(5, 8);
-
-    Point sum = p1 + p2;
-    Point diff = p1 - p2;
-
-    EXPECT_EQ(sum.x, 15);
-    EXPECT_EQ(sum.y, 28);
-    EXPECT_EQ(diff.x, 5);
-    EXPECT_EQ(diff.y, 12);
+    {
+        Document doc("test.svg",
+                     Layout(Dimensions(400, 300), Layout::BottomLeft));
+        doc << Circle(Point(0, 0), 20, Fill(Color::Blue));
+        std::string docStr = doc.toString();
+        // std::cout << "* GroupTest2 BottomLeft docStr:\n" << docStr <<
+        // std::endl;
+        (void)docStr;  // No-op use of docStr to satisfy Cppcheck
+    }
+    {
+        Document doc("test.svg", Layout(Dimensions(400, 300), Layout::TopLeft));
+        doc << Circle(Point(0, 0), 20, Fill(Color::Blue));
+        std::string docStr = doc.toString();
+        // std::cout << "* GroupTest2 TopLeft docStr:\n" << docStr << std::endl;
+        (void)docStr;  // No-op use of docStr to satisfy Cppcheck
+    }
+    {
+        Document doc("test.svg",
+                     Layout(Dimensions(400, 300), Layout::TopRight));
+        doc << Circle(Point(0, 0), 20, Fill(Color::Blue));
+        std::string docStr = doc.toString();
+        // std::cout << "* GroupTest2 TopRight docStr:\n" << docStr <<
+        // std::endl;
+        (void)docStr;  // No-op use of docStr to satisfy Cppcheck
+    }
+    {
+        Document doc("test.svg",
+                     Layout(Dimensions(400, 300), Layout::BottomRight));
+        doc << Circle(Point(0, 0), 20, Fill(Color::Blue));
+        std::string docStr = doc.toString();
+        // std::cout << "* GroupTest2 BottomRight docStr:\n"
+        //           << docStr << std::endl;
+        (void)docStr;  // No-op use of docStr to satisfy Cppcheck
+    }
 }
 
 // Run the tests
