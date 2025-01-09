@@ -61,6 +61,8 @@ inline std::string elemEnd(std::string const &element_name)
 }
 inline std::string emptyElemEnd() { return "/>\n"; }
 
+struct Point;  // forward declaration
+
 struct Dimensions
 {
     Dimensions(double width, double height) : width(width), height(height) {}
@@ -69,6 +71,8 @@ struct Dimensions
     }
     double width;
     double height;
+
+    friend Dimensions &operator+=(Dimensions &, const Point &);
 };
 
 struct Point
@@ -86,10 +90,6 @@ struct Point
     {
         return Point(x - rhs.x, y - rhs.y);
     }
-    return optional<Point>(min);
-} inline optional<Point> getMaxPoint(std::vector<Point> const &points)
-{
-    if (points.empty()) return optional<Point>();
 
     Point &operator+=(const Point &rhs)
     {
@@ -118,7 +118,21 @@ struct Point
         y /= scalar;
         return *this;
     }
+
+    Point &operator+=(const Dimensions &rhs)
+    {
+        x += rhs.width;
+        y += rhs.height;
+        return *this;
+    }
 };
+
+Dimensions &operator+=(Dimensions &lhs, const Point &rhs)
+{
+    lhs.width += rhs.x;
+    lhs.height += rhs.y;
+    return lhs;
+}
 
 inline std::optional<Point> getMinPoint(std::vector<Point> const &points)
 {
@@ -373,6 +387,10 @@ class Stroke : public Serializeable
     std::string toString(Layout const &layout) const override
     {
         if (width < 0) return std::string();
+        std::stringstream ss;
+        ss << attribute("stroke-width", translateScale(width, layout))
+           << attribute("stroke", color.toString(layout));
+        if (nonScaling) ss << attribute("vector-effect", "non-scaling-stroke");
 
         return ss.str();
     }
@@ -518,7 +536,9 @@ class Circle : public Shape
     {
     }
 
+    std::string toString(Layout const &layout) const override
     {
+        std::stringstream ss;
         ss << elemStart("circle")
            << attribute("cx", translateX(center.x, layout))
            << attribute("cy", translateY(center.y, layout))
@@ -1040,11 +1060,7 @@ class LineChart : public Shape
 
         return ret + axisString(layout);
     }
-    void offset(Point const &offset) override
-    {
-        for (unsigned i = 0; i < polylines.size(); ++i)
-            polylines[i].offset(offset);
-    }
+    void offset(Point const &offset) override { margin += offset; }
 
     Point getRotationCenter() const override
     {

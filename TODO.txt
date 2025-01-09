@@ -1,0 +1,6 @@
+- rework the advanced demos and move into the 500x500
+
+- test and demo rotations
+
+- ShapeColl has offset(): must call it before returning elements
+- it would be better to have a ShapeColl.offset(x,y) and apply it automatically to all elements
